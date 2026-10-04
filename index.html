@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GENITUS DIVIDENDEN-MARKOV-SIMULATOR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root{--bg:#f4f7fb;--surface:#ffffff;--border:#d9e2ec;--accent:#0e7490;--gold:#b45309;--green:#15803d;--red:#b91c1c;--muted:#52606d;--text:#1e293b;--bright:#0f172a;--mono:'Space Mono',monospace;--sans:'Rajdhani',sans-serif;}
+    :root.dark-theme{--bg:#080c10;--surface:#0d1117;--border:#1e2d3d;--accent:#00d4ff;--gold:#f0c040;--green:#00ff88;--red:#ff3b5c;--muted:#7d92a8;--text:#c8d8e8;--bright:#ffffff;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;min-height:100vh;transition:background .25s,color .25s;}
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;}
+    .logo{display:flex;align-items:center;gap:12px;}
+    .logo-mark{width:32px;height:32px;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--accent);}
+    .logo-text{font-family:var(--mono);font-size:13px;letter-spacing:3px;color:var(--bright);}
+    .logo-sub{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);display:block;margin-top:1px;}
+    #themeToggleBtn{background:none;border:1px solid var(--border);color:var(--accent);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:14px;}
+    .cache-badge{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 8px;border:1px solid var(--accent);color:var(--accent);border-radius:2px;text-transform:uppercase;}
+    .main{max-width:1100px;margin:0 auto;padding:20px;}
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:18px;}
+    .panel h2{font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--bright);margin-bottom:14px;text-transform:uppercase;}
+    input[type="text"]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;border-radius:4px;margin-bottom:10px;}
+    select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px;outline:none;border-radius:4px;}
+    .ctrl-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+    .ctrl-row label{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-right:6px;}
+    .ctrl-row select{width:auto;min-width:110px;}
+    button.run-btn{background:var(--accent);border:none;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:11px 24px;border-radius:4px;cursor:pointer;margin-top:14px;}
+    button.run-btn:hover{opacity:.88;}
+    button.run-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .company-info{display:none;font-size:13px;line-height:1.6;margin-top:4px;}
+    .company-info b{color:var(--accent);}
+    .warn{color:var(--gold);font-size:11px;margin-top:4px;}
+    .timeline{display:flex;flex-wrap:wrap;gap:3px;margin-top:10px;}
+    .tchip{width:20px;height:20px;border-radius:3px;font-family:var(--mono);font-size:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:default;}
+    .tchip.R{background:#0e7490;} .tchip.I{background:var(--green);} .tchip.F{background:var(--muted);}
+    .tchip.C{background:var(--red);} .tchip.S{background:var(--bright);opacity:.5;}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;}
+    .legend span{display:inline-flex;align-items:center;gap:5px;}
+    .legend i{width:12px;height:12px;border-radius:2px;display:inline-block;}
+    .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+    @media (max-width:700px){.result-grid{grid-template-columns:1fr;}}
+    .result-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center;}
+    .result-title{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+    .result-val{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent);}
+    .result-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;}
+    .chart-wrap{position:relative;height:260px;}
+    table.matrix{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}
+    table.matrix th,table.matrix td{padding:6px 8px;text-align:center;font-family:var(--mono);border-bottom:1px solid var(--border);}
+    table.matrix th{color:var(--muted);text-transform:uppercase;font-size:9px;}
+    table.matrix td:first-child,table.matrix th:first-child{text-align:left;color:var(--accent);font-weight:700;}
+    .disclaimer{font-size:10px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;margin-top:14px;}
+    .loading-line{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;padding:40px;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">M</div><div><span class="logo-text">GENITUS</span><span class="logo-sub">DIVIDENDEN-MARKOV-SIMULATOR</span></div></div>
+  <div style="display:flex;align-items:center;gap:10px"><span class="cache-badge" id="cacheBadge">● lädt...</span><button id="themeToggleBtn" title="Toggle theme">🌙</button></div>
+</header>
+<div class="main">
+  <div class="panel">
+    <h2>1. Firma wählen</h2>
+    <input type="text" id="searchInput" placeholder="Symbol oder Name suchen (z.B. KO, Johnson, Allianz)..." oninput="onSearch()">
+    <select id="resultsSelect" size="8" onchange="onSelectSymbol()" style="display:none"></select>
+    <div class="company-info" id="companyInfo"></div>
+    <div class="timeline" id="timeline"></div>
+    <div class="legend" id="legend" style="display:none">
+      <span><i style="background:#0e7490"></i>Resumed/Start</span>
+      <span><i style="background:#15803d"></i>Increase</span>
+      <span><i style="background:#52606d"></i>Flat</span>
+      <span><i style="background:#b91c1c"></i>Cut</span>
+      <span><i style="background:#0f172a;opacity:.5"></i>Suspended</span>
+    </div>
+  </div>
+
+  <div class="panel" id="simPanel" style="display:none">
+    <h2>2. Monte-Carlo-Simulation</h2>
+    <div class="ctrl-row">
+      <label>Horizont</label>
+      <select id="horizonSelect"><option value="5">5 Jahre</option><option value="10" selected>10 Jahre</option><option value="20">20 Jahre</option></select>
+      <label>Pfade</label>
+      <select id="pathsSelect"><option value="1000">1.000</option><option value="10000" selected>10.000</option></select>
+    </div>
+    <button class="run-btn" id="runBtn" onclick="runMonteCarlo()">Simulation starten</button>
+  </div>
+
+  <div id="resultsArea" style="display:none">
+    <div class="result-grid" id="resultGrid"></div>
+    <div class="panel">
+      <h2>Verteilung des End-Zustands (Horizont)</h2>
+      <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Verwendete Übergangsmatrix: <span id="matrixScopeLabel"></span></h2>
+      <table class="matrix" id="matrixTable"></table>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    Zustände je Kalenderjahr: <b>Resumed</b> (Erstzahlung oder Wiederaufnahme nach Lücke), <b>Increase</b> (&gt;1% mehr als Vorjahr), <b>Flat</b> (±1%), <b>Cut</b> (&gt;1% weniger), <b>Suspended</b> (keine Zahlung in diesem Jahr, nur erkannt bei Lücken <i>zwischen</i> zwei bekannten Zahlungsjahren — ein Aussetzen am aktuellen Rand der Daten wird NICHT als "Suspended" gewertet, da unklar ist ob Firma delisted/übernommen wurde oder die Datenerfassung endete). Übergangsmatrix empirisch aus 644.109 beobachteten Jahr-zu-Jahr-Übergängen über 59.456 Firmen; sektorspezifische Matrix nur für die ~1.300 S&amp;P-500-Firmen mit bekanntem GICS-Sektor, alle anderen nutzen die globale Matrix. Das Modell ist ein <b>Markov 1. Ordnung</b> (memoryless) — es "erinnert" sich nicht an mehr als den letzten Zustand, z.B. wird eine Firma mit 3 Kürzungen in Folge gleich behandelt wie eine mit nur 1. Monte-Carlo-Pfade simulieren rein auf Basis dieser Matrix, nicht auf Basis unternehmensspezifischer Fundamentaldaten. Historische Simulation auf Basis vergangener Muster, keine Prognose, keine Anlageberatung — reine Cache-Auswertung, keine Live-Abfrage.
+  </div>
+</div>
+<script>
+  const DATA_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-markov-data.json';
+  (function(){
+    const KEY='genitusTheme:markov';
+    function applyTheme(t){ document.documentElement.classList.toggle('dark-theme', t==='dark'); localStorage.setItem(KEY,t); const btn=document.getElementById('themeToggleBtn'); if(btn) btn.textContent = t==='dark' ? '☀' : '🌙'; }
+    let saved = localStorage.getItem(KEY) || 'light';
+    applyTheme(saved);
+    document.getElementById('themeToggleBtn').addEventListener('click', function(){ applyTheme(document.documentElement.classList.contains('dark-theme')?'light':'dark'); if(distChartInstance) renderDistChart(lastSimResult); });
+  })();
+
+  let data = null;
+  let searchIndex = [];
+  let selected = null;
+  let distChartInstance = null;
+  let lastSimResult = null;
+  const CODE_LABEL = { R:'Resumed', I:'Increase', F:'Flat', C:'Cut', S:'Suspended' };
+  const STATE_FROM_CODE = { R:'Resumed', I:'Increase', F:'Flat', C:'Cut', S:'Suspended' };
+  const CODE_FROM_STATE = { Resumed:'R', Increase:'I', Flat:'F', Cut:'C', Suspended:'S' };
+
+  async function loadData(){
+    try{
+      const res = await fetch(DATA_URL);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      data = await res.json();
+      searchIndex = data.perSymbol.map(r=>({ r, key: (r.symbol+' '+r.name).toLowerCase() }));
+      document.getElementById('cacheBadge').textContent = `● ${data.perSymbol.length} Firmen, ${data.sectors.length} Sektor-Matrizen`;
+    }catch(e){
+      document.getElementById('cacheBadge').textContent = '● Fehler';
+      document.getElementById('searchInput').placeholder = 'Fehler: ' + e.message;
+    }
+  }
+
+  let searchTimer = null;
+  window.onSearch = function(){
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(doSearch, 120);
+  };
+  function doSearch(){
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const sel = document.getElementById('resultsSelect');
+    if(!q || !data){ sel.style.display='none'; sel.innerHTML=''; return; }
+    const matches = [];
+    for(let i=0;i<searchIndex.length && matches.length<50;i++){
+      if(searchIndex[i].key.includes(q)) matches.push(searchIndex[i].r);
+    }
+    sel.innerHTML = matches.map(r=>`<option value="${r.symbol}">${r.name} (${r.symbol}) — ${r.sector||'kein Sektor'} — zuletzt ${r.lastYear}: ${CODE_LABEL[r.states[r.states.length-1]]}</option>`).join('');
+    sel.style.display = matches.length ? 'block' : 'none';
+  }
+
+  window.onSelectSymbol = function(){
+    const sym = document.getElementById('resultsSelect').value;
+    selected = data.perSymbol.find(r=>r.symbol===sym);
+    if(!selected) return;
+    renderCompanyInfo();
+    document.getElementById('simPanel').style.display = 'block';
+    document.getElementById('resultsArea').style.display = 'none';
+  };
+
+  function renderCompanyInfo(){
+    const r = selected;
+    const info = document.getElementById('companyInfo');
+    info.style.display = 'block';
+    const stale = (data.generatedYear - r.lastYear) > 2;
+    info.innerHTML = `<b>${r.name}</b> (${r.symbol}) — ${r.exchange} — ${r.type}<br>
+      Zahl-Historie: ${r.firstYear}–${r.lastYear} · Sektor: ${r.sector||'unbekannt (nutzt globale Matrix)'} · Aktueller Zustand: <b>${r.currentState}</b>
+      ${stale?`<div class="warn">⚠ Letzte Zahlung ${r.lastYear} — über 2 Jahre her, Startzustand evtl. veraltet (Delisting/Übernahme möglich)</div>`:''}`;
+    document.getElementById('timeline').innerHTML = r.states.split('').map((c,i)=>`<div class="tchip ${c}" title="${r.firstYear+i}: ${CODE_LABEL[c]}">${String(r.firstYear+i).slice(2)}</div>`).join('');
+    document.getElementById('legend').style.display = 'flex';
+  }
+
+  function weightedNext(matrix, fromState){
+    const row = matrix[fromState];
+    let r = Math.random();
+    for(const s of data.states){ r -= row[s]; if(r<=1e-9) return s; }
+    return data.states[data.states.length-1];
+  }
+
+  window.runMonteCarlo = function(){
+    if(!selected) return;
+    const horizon = parseInt(document.getElementById('horizonSelect').value);
+    const nPaths = parseInt(document.getElementById('pathsSelect').value);
+    const scope = selected.sector && data.matrices[selected.sector] ? selected.sector : 'GLOBAL';
+    const matrix = data.matrices[scope];
+    const startState = selected.currentState;
+    const finalCounts = {}; data.states.forEach(s=>finalCounts[s]=0);
+    let nStillPaying=0, nGrowingFinal=0, nNetGrowth=0;
+    for(let p=0;p<nPaths;p++){
+      let state = startState;
+      let incCount=0, cutCount=0;
+      for(let y=0;y<horizon;y++){
+        state = weightedNext(matrix, state);
+        if(state==='Increase') incCount++;
+        if(state==='Cut') cutCount++;
+      }
+      finalCounts[state]++;
+      if(state!=='Suspended') nStillPaying++;
+      if(state==='Increase') nGrowingFinal++;
+      if(incCount>cutCount) nNetGrowth++;
+    }
+    lastSimResult = { finalCounts, nPaths, horizon, scope, sampleSize: data.matrixSampleSizes[scope],
+      pStillPaying: nStillPaying/nPaths*100, pGrowingFinal: nGrowingFinal/nPaths*100, pNetGrowth: nNetGrowth/nPaths*100, matrix };
+    renderResults(lastSimResult);
+  };
+
+  function renderResults(sim){
+    document.getElementById('resultsArea').style.display = 'block';
+    document.getElementById('resultGrid').innerHTML = `
+      <div class="result-card"><div class="result-title">Noch zahlend in ${sim.horizon}J</div><div class="result-val">${sim.pStillPaying.toFixed(1)}%</div><div class="result-sub">Zustand ≠ Suspended</div></div>
+      <div class="result-card"><div class="result-title">Wachsend im Jahr ${sim.horizon}</div><div class="result-val" style="color:var(--green)">${sim.pGrowingFinal.toFixed(1)}%</div><div class="result-sub">Zustand = Increase im Zieljahr</div></div>
+      <div class="result-card"><div class="result-title">Netto-Wachstumstrend</div><div class="result-val" style="color:var(--gold)">${sim.pNetGrowth.toFixed(1)}%</div><div class="result-sub">mehr Increase- als Cut-Jahre im Pfad</div></div>
+    `;
+    renderDistChart(sim);
+    document.getElementById('matrixScopeLabel').textContent = `${sim.scope} (n=${sim.sampleSize} beobachtete Übergänge)`;
+    const colors = { Resumed:'#0e7490', Increase:'#15803d', Flat:'#52606d', Cut:'#b91c1c', Suspended:'#0f172a' };
+    document.getElementById('matrixTable').innerHTML =
+      '<tr><th>Von \\ Nach</th>' + data.states.map(s=>`<th>${s}</th>`).join('') + '</tr>' +
+      data.states.map(from=>`<tr><td>${from}</td>${data.states.map(to=>`<td>${(sim.matrix[from][to]*100).toFixed(1)}%</td>`).join('')}</tr>`).join('');
+  }
+
+  function renderDistChart(sim){
+    if(!sim) return;
+    const ctx = document.getElementById('distChart').getContext('2d');
+    if(distChartInstance) distChartInstance.destroy();
+    const isDark = document.documentElement.classList.contains('dark-theme');
+    const textColor = isDark ? '#7d92a8' : '#52606d';
+    const gridColor = isDark ? 'rgba(125,146,168,0.15)' : 'rgba(82,96,109,0.12)';
+    const colors = { Resumed:'#0e7490', Increase:'#15803d', Flat:'#52606d', Cut:'#b91c1c', Suspended:'#64748b' };
+    const labels = data.states;
+    const values = labels.map(s=> sim.finalCounts[s]/sim.nPaths*100);
+    distChartInstance = new Chart(ctx, {
+      type:'bar',
+      data:{ labels, datasets:[{ label:`Verteilung nach ${sim.horizon} Jahren (${sim.nPaths} Pfade)`, data: values, backgroundColor: labels.map(s=>colors[s]) }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'%'}} },
+        scales:{ x:{ ticks:{color:textColor}, grid:{color:gridColor} }, y:{ ticks:{color:textColor, callback:v=>v+'%'}, grid:{color:gridColor} } },
+      },
+    });
+  }
+
+  loadData();
+</script>
+</body>
+</html>
