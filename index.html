@@ -271,7 +271,7 @@
     info.style.display = 'block';
     const stale = (data.generatedYear - r.lastYear) > 2;
     info.innerHTML = `<b>${r.name}</b> (${r.symbol}) — ${r.exchange} — ${r.type}<br>
-      Zahl-Historie: ${r.firstYear}–${r.lastYear} · Sektor: ${r.sector||'unbekannt (nutzt globale Matrix)'} · Aktueller Zustand: <b>${r.currentState}</b> · Cache-Rendite: ${r.yieldPct?r.yieldPct.toFixed(2)+'%':'n.v.'}
+      Zahl-Historie: ${r.firstYear}–${r.lastYear} · Sektor: ${r.sector||'unbekannt (nutzt globale Matrix)'} · Aktueller Zustand: <b>${r.currentState}</b> · Cache-Rendite: ${r.yieldPct && r.yieldPct<=50 ? r.yieldPct.toFixed(2)+'%' : 'n.v. (unplausibler Cache-Wert)'}
       ${stale?`<div class="warn">⚠ Letzte Zahlung ${r.lastYear} — über 2 Jahre her, Startzustand evtl. veraltet (Delisting/Übernahme möglich)</div>`:''}`;
     document.getElementById('timeline').innerHTML = r.states.split('').map((c,i)=>`<div class="tchip ${c}" title="${r.firstYear+i}: ${CODE_LABEL[c]}">${String(r.firstYear+i).slice(2)}</div>`).join('');
     document.getElementById('legend').style.display = 'flex';
