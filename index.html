@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GENITUS DIVIDENDEN-MARKOV-SIMULATOR</title>
+  <title>GENITUS DIVIDENDEN-MARKOV &amp; RISK LAB</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
@@ -19,6 +19,11 @@
     #themeToggleBtn{background:none;border:1px solid var(--border);color:var(--accent);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:14px;}
     .cache-badge{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 8px;border:1px solid var(--accent);color:var(--accent);border-radius:2px;text-transform:uppercase;}
     .main{max-width:1100px;margin:0 auto;padding:20px;}
+    .tabbar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+    .tabbtn{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:10px 16px;border-radius:6px;cursor:pointer;}
+    .tabbtn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+    .tabpanel{display:none;}
+    .tabpanel.active{display:block;}
     .panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:18px;}
     .panel h2{font-family:var(--mono);font-size:13px;letter-spacing:1px;color:var(--bright);margin-bottom:14px;text-transform:uppercase;}
     input[type="text"]{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 12px;outline:none;border-radius:4px;margin-bottom:10px;}
@@ -29,6 +34,8 @@
     button.run-btn{background:var(--accent);border:none;color:#fff;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:11px 24px;border-radius:4px;cursor:pointer;margin-top:14px;}
     button.run-btn:hover{opacity:.88;}
     button.run-btn:disabled{opacity:.4;cursor:not-allowed;}
+    button.add-btn{background:var(--green);border:none;color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:5px 10px;border-radius:4px;cursor:pointer;}
+    button.rm-btn{background:var(--red);border:none;color:#fff;font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 7px;border-radius:3px;cursor:pointer;margin-left:6px;}
     .company-info{display:none;font-size:13px;line-height:1.6;margin-top:4px;}
     .company-info b{color:var(--accent);}
     .warn{color:var(--gold);font-size:11px;margin-top:4px;}
@@ -50,82 +57,169 @@
     table.matrix th,table.matrix td{padding:6px 8px;text-align:center;font-family:var(--mono);border-bottom:1px solid var(--border);}
     table.matrix th{color:var(--muted);text-transform:uppercase;font-size:9px;}
     table.matrix td:first-child,table.matrix th:first-child{text-align:left;color:var(--accent);font-weight:700;}
+    .basket-list{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+    .basket-chip{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:6px 10px;font-family:var(--mono);font-size:11px;display:flex;align-items:center;}
+    .milestone-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+    .milestone-card{flex:1;min-width:130px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;}
+    .milestone-card.reached{opacity:.5;}
+    .milestone-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--gold);}
+    .milestone-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
     .disclaimer{font-size:10px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;margin-top:14px;}
     .loading-line{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center;padding:40px;}
+    .insight{font-size:12px;background:rgba(14,116,144,0.08);border:1px dashed var(--accent);border-radius:6px;padding:10px 12px;margin-top:10px;}
   </style>
 </head>
 <body>
 <header>
-  <div class="logo"><div class="logo-mark">M</div><div><span class="logo-text">GENITUS</span><span class="logo-sub">DIVIDENDEN-MARKOV-SIMULATOR</span></div></div>
+  <div class="logo"><div class="logo-mark">M</div><div><span class="logo-text">GENITUS</span><span class="logo-sub">DIVIDENDEN-MARKOV &amp; RISK LAB</span></div></div>
   <div style="display:flex;align-items:center;gap:10px"><span class="cache-badge" id="cacheBadge">● lädt...</span><button id="themeToggleBtn" title="Toggle theme">🌙</button></div>
 </header>
 <div class="main">
-  <div class="panel">
-    <h2>1. Firma wählen</h2>
-    <input type="text" id="searchInput" placeholder="Symbol oder Name suchen (z.B. KO, Johnson, Allianz)..." oninput="onSearch()">
-    <select id="resultsSelect" size="8" onchange="onSelectSymbol()" style="display:none"></select>
-    <div class="company-info" id="companyInfo"></div>
-    <div class="timeline" id="timeline"></div>
-    <div class="legend" id="legend" style="display:none">
-      <span><i style="background:#0e7490"></i>Resumed/Start</span>
-      <span><i style="background:#15803d"></i>Increase</span>
-      <span><i style="background:#52606d"></i>Flat</span>
-      <span><i style="background:#b91c1c"></i>Cut</span>
-      <span><i style="background:#0f172a;opacity:.5"></i>Suspended</span>
-    </div>
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="single" onclick="switchTab('single')">Einzelfirma</button>
+    <button class="tabbtn" data-tab="hazard" onclick="switchTab('hazard')">Cut-Hazard-Kurve</button>
+    <button class="tabbtn" data-tab="portfolio" onclick="switchTab('portfolio')">Portfolio-Simulator</button>
   </div>
 
-  <div class="panel" id="simPanel" style="display:none">
-    <h2>2. Monte-Carlo-Simulation</h2>
-    <div class="ctrl-row">
-      <label>Horizont</label>
-      <select id="horizonSelect"><option value="5">5 Jahre</option><option value="10" selected>10 Jahre</option><option value="20">20 Jahre</option></select>
-      <label>Pfade</label>
-      <select id="pathsSelect"><option value="1000">1.000</option><option value="10000" selected>10.000</option></select>
-    </div>
-    <button class="run-btn" id="runBtn" onclick="runMonteCarlo()">Simulation starten</button>
-  </div>
-
-  <div id="resultsArea" style="display:none">
-    <div class="result-grid" id="resultGrid"></div>
+  <!-- TAB 1: EINZELFIRMA -->
+  <div class="tabpanel active" id="tab-single">
     <div class="panel">
-      <h2>Verteilung des End-Zustands (Horizont)</h2>
-      <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+      <h2>1. Firma wählen</h2>
+      <input type="text" id="searchInput" placeholder="Symbol oder Name suchen (z.B. KO, Johnson, Allianz)..." oninput="onSearch('single')">
+      <select id="resultsSelect" size="8" onchange="onSelectSymbol()" style="display:none"></select>
+      <div class="company-info" id="companyInfo"></div>
+      <div class="timeline" id="timeline"></div>
+      <div class="legend" id="legend" style="display:none">
+        <span><i style="background:#0e7490"></i>Resumed/Start</span>
+        <span><i style="background:#15803d"></i>Increase</span>
+        <span><i style="background:#52606d"></i>Flat</span>
+        <span><i style="background:#b91c1c"></i>Cut</span>
+        <span><i style="background:#0f172a;opacity:.5"></i>Suspended</span>
+      </div>
     </div>
-    <div class="panel">
-      <h2>Verwendete Übergangsmatrix: <span id="matrixScopeLabel"></span></h2>
-      <table class="matrix" id="matrixTable"></table>
+
+    <div class="panel" id="simPanel" style="display:none">
+      <h2>2. Monte-Carlo-Simulation</h2>
+      <div class="ctrl-row">
+        <label>Horizont</label>
+        <select id="horizonSelect"><option value="5">5 Jahre</option><option value="10" selected>10 Jahre</option><option value="20">20 Jahre</option></select>
+        <label>Pfade</label>
+        <select id="pathsSelect"><option value="1000">1.000</option><option value="10000" selected>10.000</option></select>
+      </div>
+      <button class="run-btn" id="runBtn" onclick="runMonteCarlo()">Simulation starten</button>
+    </div>
+
+    <div id="resultsArea" style="display:none">
+      <div class="result-grid" id="resultGrid"></div>
+      <div class="panel">
+        <h2>Verteilung des End-Zustands (Horizont)</h2>
+        <div class="chart-wrap"><canvas id="distChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Streak-Erhalt: nächste Marken</h2>
+        <div class="milestone-row" id="milestoneRow"></div>
+      </div>
+      <div class="panel">
+        <h2>Verwendete Übergangsmatrix: <span id="matrixScopeLabel"></span></h2>
+        <table class="matrix" id="matrixTable"></table>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      Zustände je Kalenderjahr: <b>Resumed</b> (Erstzahlung/Wiederaufnahme), <b>Increase</b> (&gt;1% mehr als Vorjahr), <b>Flat</b> (±1%), <b>Cut</b> (&gt;1% weniger), <b>Suspended</b> (Lücke zwischen zwei Zahlungsjahren — Aussetzen am aktuellen Datenrand wird NICHT so gewertet, Delisting/Übernahme nicht unterscheidbar). Übergangsmatrix empirisch aus 644.109 Jahr-zu-Jahr-Übergängen über 59.456 Firmen; Sektor-Matrix nur für ~1.300 S&amp;P-500-Firmen, sonst GLOBAL. <b>Markov 1. Ordnung</b> (memoryless) — 3 Kürzungen in Folge werden wie 1 behandelt. "Streak-Erhalt" nutzt dieselbe Simulation, verlangt aber dass KEIN Cut/Suspended im gesamten Zeitraum auftritt (strenger als "Endzustand ≠ Suspended"). Historische Simulation, keine Prognose, keine Anlageberatung.
     </div>
   </div>
 
-  <div class="disclaimer">
-    Zustände je Kalenderjahr: <b>Resumed</b> (Erstzahlung oder Wiederaufnahme nach Lücke), <b>Increase</b> (&gt;1% mehr als Vorjahr), <b>Flat</b> (±1%), <b>Cut</b> (&gt;1% weniger), <b>Suspended</b> (keine Zahlung in diesem Jahr, nur erkannt bei Lücken <i>zwischen</i> zwei bekannten Zahlungsjahren — ein Aussetzen am aktuellen Rand der Daten wird NICHT als "Suspended" gewertet, da unklar ist ob Firma delisted/übernommen wurde oder die Datenerfassung endete). Übergangsmatrix empirisch aus 644.109 beobachteten Jahr-zu-Jahr-Übergängen über 59.456 Firmen; sektorspezifische Matrix nur für die ~1.300 S&amp;P-500-Firmen mit bekanntem GICS-Sektor, alle anderen nutzen die globale Matrix. Das Modell ist ein <b>Markov 1. Ordnung</b> (memoryless) — es "erinnert" sich nicht an mehr als den letzten Zustand, z.B. wird eine Firma mit 3 Kürzungen in Folge gleich behandelt wie eine mit nur 1. Monte-Carlo-Pfade simulieren rein auf Basis dieser Matrix, nicht auf Basis unternehmensspezifischer Fundamentaldaten. Historische Simulation auf Basis vergangener Muster, keine Prognose, keine Anlageberatung — reine Cache-Auswertung, keine Live-Abfrage.
+  <!-- TAB 2: CUT-HAZARD -->
+  <div class="tabpanel" id="tab-hazard">
+    <div class="panel">
+      <h2>Kaplan-Meier Überlebenskurve: Wie lange hält eine Steigerungs-Serie?</h2>
+      <p style="font-size:13px;line-height:1.6">Jede "Serie" beginnt nach einer Kürzung/Aussetzung (oder bei Erstzahlung) und läuft, solange die Dividende hält oder steigt. Die Kurve zeigt: <b>wie viele Serien überleben noch nach X Jahren?</b></p>
+      <div class="ctrl-row">
+        <label>Stratifizierung</label>
+        <select id="hazardScopeSelect" onchange="renderHazardChart()">
+          <option value="global">Global (alle 59.456 Firmen)</option>
+          <option value="sector">Nach Sektor (S&amp;P 500)</option>
+          <option value="payout">Nach Payout-Ratio (S&amp;P 500)</option>
+        </select>
+        <select id="hazardSubSelect" style="display:none" onchange="renderHazardChart()"></select>
+      </div>
+      <div class="chart-wrap" style="margin-top:14px"><canvas id="hazardChart"></canvas></div>
+      <div class="insight" id="hazardInsight"></div>
+    </div>
+    <div class="disclaimer">
+      "Event" = Cut ODER Suspended (beide beenden eine Serie). Zensierte Serien (noch laufend am Datenrand) fließen als "überlebt bisher" ein, nicht als Ereignis. Sektor/Payout-Stratifizierung nur für die ~1.300 S&amp;P-500-Firmen mit bekannten Fundamentaldaten. Payout-Buckets: Niedrig &lt;40%, Mittel 40-60%, Hoch 60-80%, Sehr hoch &gt;80%. Hinweis: Jahres-zu-Jahr-Vergleiche können durch Sonderdividenden künstlich wie ein "Cut" im Folgejahr aussehen (Basiseffekt) — die Kurve bildet beobachtete Muster ab, keine bereinigte "echte" Kürzungsrate. Keine Anlageberatung.
+    </div>
+  </div>
+
+  <!-- TAB 3: PORTFOLIO -->
+  <div class="tabpanel" id="tab-portfolio">
+    <div class="panel">
+      <h2>1. Kundenkorb zusammenstellen</h2>
+      <input type="text" id="portfolioSearchInput" placeholder="Symbol oder Name suchen, dann '+ Hinzufügen'..." oninput="onSearch('portfolio')">
+      <select id="portfolioResultsSelect" size="6" style="display:none"></select>
+      <button class="add-btn" id="addToBasketBtn" style="display:none;margin-top:8px" onclick="addToBasket()">+ Zum Portfolio hinzufügen</button>
+      <div class="basket-list" id="basketList"></div>
+    </div>
+    <div class="panel" id="portfolioSimPanel" style="display:none">
+      <h2>2. Portfolio-Monte-Carlo</h2>
+      <div class="ctrl-row">
+        <label>Horizont</label>
+        <select id="pfHorizonSelect"><option value="5">5 Jahre</option><option value="10" selected>10 Jahre</option><option value="20">20 Jahre</option></select>
+        <label>Trials</label>
+        <select id="pfTrialsSelect"><option value="1000">1.000</option><option value="5000" selected>5.000</option></select>
+      </div>
+      <button class="run-btn" onclick="runPortfolioMonteCarlo()">Portfolio-Simulation starten</button>
+    </div>
+    <div id="portfolioResultsArea" style="display:none">
+      <div class="result-grid" id="pfResultGrid"></div>
+      <div class="panel">
+        <h2>Verteilung: wie viele Positionen zahlen noch nach dem Horizont?</h2>
+        <div class="chart-wrap"><canvas id="pfDistChart"></canvas></div>
+      </div>
+    </div>
+    <div class="disclaimer">
+      Jede Position wird <b>unabhängig</b> mit ihrer eigenen Übergangsmatrix simuliert — Korrelationen zwischen Positionen (z.B. alle Finanzwerte fallen gemeinsam in einer Krise) werden NICHT modelliert, das ist eine bewusste Vereinfachung. "Noch zahlend" = Zustand ≠ Suspended im Zieljahr, je Position. Historische Simulation, keine Anlageberatung.
+    </div>
   </div>
 </div>
 <script>
-  const DATA_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-markov-data.json';
+  const MARKOV_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-markov-data.json';
+  const HAZARD_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-hazard-data.json';
   (function(){
     const KEY='genitusTheme:markov';
     function applyTheme(t){ document.documentElement.classList.toggle('dark-theme', t==='dark'); localStorage.setItem(KEY,t); const btn=document.getElementById('themeToggleBtn'); if(btn) btn.textContent = t==='dark' ? '☀' : '🌙'; }
     let saved = localStorage.getItem(KEY) || 'light';
     applyTheme(saved);
-    document.getElementById('themeToggleBtn').addEventListener('click', function(){ applyTheme(document.documentElement.classList.contains('dark-theme')?'light':'dark'); if(distChartInstance) renderDistChart(lastSimResult); });
+    document.getElementById('themeToggleBtn').addEventListener('click', function(){
+      applyTheme(document.documentElement.classList.contains('dark-theme')?'light':'dark');
+      if(distChartInstance) renderDistChart(lastSimResult);
+      if(hazardChartInstance) renderHazardChart();
+      if(pfDistChartInstance) renderPortfolioResults(lastPfResult);
+    });
   })();
 
-  let data = null;
+  window.switchTab = function(tab){
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    document.querySelectorAll('.tabpanel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+tab));
+    if(tab==='hazard' && hazardData && !hazardChartInstance) renderHazardChart();
+  };
+
+  let data = null, hazardData = null;
   let searchIndex = [];
   let selected = null;
-  let distChartInstance = null;
-  let lastSimResult = null;
+  let basket = [];
+  let portfolioPending = null;
+  let distChartInstance = null, hazardChartInstance = null, pfDistChartInstance = null;
+  let lastSimResult = null, lastPfResult = null;
   const CODE_LABEL = { R:'Resumed', I:'Increase', F:'Flat', C:'Cut', S:'Suspended' };
-  const STATE_FROM_CODE = { R:'Resumed', I:'Increase', F:'Flat', C:'Cut', S:'Suspended' };
-  const CODE_FROM_STATE = { Resumed:'R', Increase:'I', Flat:'F', Cut:'C', Suspended:'S' };
 
   async function loadData(){
     try{
-      const res = await fetch(DATA_URL);
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      data = await res.json();
+      const [mRes, hRes] = await Promise.all([fetch(MARKOV_URL), fetch(HAZARD_URL)]);
+      if(!mRes.ok) throw new Error('HTTP '+mRes.status);
+      data = await mRes.json();
+      if(hRes.ok) hazardData = await hRes.json();
       searchIndex = data.perSymbol.map(r=>({ r, key: (r.symbol+' '+r.name).toLowerCase() }));
       document.getElementById('cacheBadge').textContent = `● ${data.perSymbol.length} Firmen, ${data.sectors.length} Sektor-Matrizen`;
     }catch(e){
@@ -135,20 +229,27 @@
   }
 
   let searchTimer = null;
-  window.onSearch = function(){
+  window.onSearch = function(context){
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(doSearch, 120);
+    searchTimer = setTimeout(()=>doSearch(context), 120);
   };
-  function doSearch(){
-    const q = document.getElementById('searchInput').value.toLowerCase().trim();
-    const sel = document.getElementById('resultsSelect');
-    if(!q || !data){ sel.style.display='none'; sel.innerHTML=''; return; }
+  function doSearch(context){
+    const inputId = context==='portfolio' ? 'portfolioSearchInput' : 'searchInput';
+    const selId = context==='portfolio' ? 'portfolioResultsSelect' : 'resultsSelect';
+    const q = document.getElementById(inputId).value.toLowerCase().trim();
+    const sel = document.getElementById(selId);
+    if(!q || !data){ sel.style.display='none'; sel.innerHTML=''; if(context==='portfolio') document.getElementById('addToBasketBtn').style.display='none'; return; }
     const matches = [];
     for(let i=0;i<searchIndex.length && matches.length<50;i++){
       if(searchIndex[i].key.includes(q)) matches.push(searchIndex[i].r);
     }
     sel.innerHTML = matches.map(r=>`<option value="${r.symbol}">${r.name} (${r.symbol}) — ${r.sector||'kein Sektor'} — zuletzt ${r.lastYear}: ${CODE_LABEL[r.states[r.states.length-1]]}</option>`).join('');
     sel.style.display = matches.length ? 'block' : 'none';
+    if(context==='portfolio'){
+      document.getElementById('addToBasketBtn').style.display = matches.length ? 'inline-block' : 'none';
+      sel.onchange = function(){ portfolioPending = data.perSymbol.find(r=>r.symbol===sel.value); };
+      portfolioPending = matches[0]||null;
+    }
   }
 
   window.onSelectSymbol = function(){
@@ -166,10 +267,20 @@
     info.style.display = 'block';
     const stale = (data.generatedYear - r.lastYear) > 2;
     info.innerHTML = `<b>${r.name}</b> (${r.symbol}) — ${r.exchange} — ${r.type}<br>
-      Zahl-Historie: ${r.firstYear}–${r.lastYear} · Sektor: ${r.sector||'unbekannt (nutzt globale Matrix)'} · Aktueller Zustand: <b>${r.currentState}</b>
+      Zahl-Historie: ${r.firstYear}–${r.lastYear} · Sektor: ${r.sector||'unbekannt (nutzt globale Matrix)'} · Aktueller Zustand: <b>${r.currentState}</b> · Cache-Rendite: ${r.yieldPct?r.yieldPct.toFixed(2)+'%':'n.v.'}
       ${stale?`<div class="warn">⚠ Letzte Zahlung ${r.lastYear} — über 2 Jahre her, Startzustand evtl. veraltet (Delisting/Übernahme möglich)</div>`:''}`;
     document.getElementById('timeline').innerHTML = r.states.split('').map((c,i)=>`<div class="tchip ${c}" title="${r.firstYear+i}: ${CODE_LABEL[c]}">${String(r.firstYear+i).slice(2)}</div>`).join('');
     document.getElementById('legend').style.display = 'flex';
+  }
+
+  function currentStreakLength(statesStr){
+    let n = 0;
+    for(let i=statesStr.length-1;i>=0;i--){
+      const c = statesStr[i];
+      if(c==='C' || c==='S') break;
+      n++;
+    }
+    return n;
   }
 
   function weightedNext(matrix, fromState){
@@ -179,11 +290,15 @@
     return data.states[data.states.length-1];
   }
 
+  function matrixFor(sector){
+    return sector && data.matrices[sector] ? sector : 'GLOBAL';
+  }
+
   window.runMonteCarlo = function(){
     if(!selected) return;
     const horizon = parseInt(document.getElementById('horizonSelect').value);
     const nPaths = parseInt(document.getElementById('pathsSelect').value);
-    const scope = selected.sector && data.matrices[selected.sector] ? selected.sector : 'GLOBAL';
+    const scope = matrixFor(selected.sector);
     const matrix = data.matrices[scope];
     const startState = selected.currentState;
     const finalCounts = {}; data.states.forEach(s=>finalCounts[s]=0);
@@ -204,7 +319,30 @@
     lastSimResult = { finalCounts, nPaths, horizon, scope, sampleSize: data.matrixSampleSizes[scope],
       pStillPaying: nStillPaying/nPaths*100, pGrowingFinal: nGrowingFinal/nPaths*100, pNetGrowth: nNetGrowth/nPaths*100, matrix };
     renderResults(lastSimResult);
+    renderMilestones(matrix, startState, nPaths);
   };
+
+  function renderMilestones(matrix, startState, nPaths){
+    const currentStreak = currentStreakLength(selected.states);
+    const targets = [10,20,25,30,40,50].filter(t=>t>currentStreak);
+    const row = document.getElementById('milestoneRow');
+    if(!targets.length){ row.innerHTML = `<div class="milestone-card reached"><div class="milestone-val">✓</div><div class="milestone-lbl">Alle Standard-Marken (bis 50J) bereits erreicht — aktuelle Serie: ${currentStreak}J</div></div>`; return; }
+    row.innerHTML = targets.map(t=>{
+      const yearsNeeded = t - currentStreak;
+      let survived = 0;
+      const simPaths = Math.min(nPaths, 2000); // milestone sim capped for speed, strict all-years criterion
+      for(let p=0;p<simPaths;p++){
+        let state = startState, ok = true;
+        for(let y=0;y<yearsNeeded;y++){
+          state = weightedNext(matrix, state);
+          if(state==='Cut' || state==='Suspended'){ ok=false; break; }
+        }
+        if(ok) survived++;
+      }
+      const pct = survived/simPaths*100;
+      return `<div class="milestone-card"><div class="milestone-val">${pct.toFixed(1)}%</div><div class="milestone-lbl">erreicht ${t}J-Marke (noch ${yearsNeeded}J nötig, aktuell ${currentStreak}J)</div></div>`;
+    }).join('');
+  }
 
   function renderResults(sim){
     document.getElementById('resultsArea').style.display = 'block';
@@ -215,7 +353,6 @@
     `;
     renderDistChart(sim);
     document.getElementById('matrixScopeLabel').textContent = `${sim.scope} (n=${sim.sampleSize} beobachtete Übergänge)`;
-    const colors = { Resumed:'#0e7490', Increase:'#15803d', Flat:'#52606d', Cut:'#b91c1c', Suspended:'#0f172a' };
     document.getElementById('matrixTable').innerHTML =
       '<tr><th>Von \\ Nach</th>' + data.states.map(s=>`<th>${s}</th>`).join('') + '</tr>' +
       data.states.map(from=>`<tr><td>${from}</td>${data.states.map(to=>`<td>${(sim.matrix[from][to]*100).toFixed(1)}%</td>`).join('')}</tr>`).join('');
@@ -234,6 +371,110 @@
     distChartInstance = new Chart(ctx, {
       type:'bar',
       data:{ labels, datasets:[{ label:`Verteilung nach ${sim.horizon} Jahren (${sim.nPaths} Pfade)`, data: values, backgroundColor: labels.map(s=>colors[s]) }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'%'}} },
+        scales:{ x:{ ticks:{color:textColor}, grid:{color:gridColor} }, y:{ ticks:{color:textColor, callback:v=>v+'%'}, grid:{color:gridColor} } },
+      },
+    });
+  }
+
+  // ---- TAB 2: HAZARD ----
+  document.getElementById('hazardScopeSelect').addEventListener('change', function(){
+    const v = this.value;
+    const sub = document.getElementById('hazardSubSelect');
+    if(v==='sector' && hazardData){ sub.innerHTML = hazardData.sectors.map(s=>`<option value="${s}">${s}</option>`).join(''); sub.style.display='block'; }
+    else if(v==='payout' && hazardData){ sub.innerHTML = hazardData.buckets.map(b=>`<option value="${b}">${b}</option>`).join(''); sub.style.display='block'; }
+    else sub.style.display='none';
+    renderHazardChart();
+  });
+  document.getElementById('hazardSubSelect').addEventListener('change', renderHazardChart);
+
+  window.renderHazardChart = function(){
+    if(!hazardData) return;
+    const scope = document.getElementById('hazardScopeSelect').value;
+    const sub = document.getElementById('hazardSubSelect').value;
+    let curve, label;
+    if(scope==='global'){ curve = hazardData.global; label = `Global (n=${hazardData.totalRuns} Serien)`; }
+    else if(scope==='sector'){ curve = hazardData.bySector[sub] || hazardData.bySector[hazardData.sectors[0]]; label = sub||hazardData.sectors[0]; }
+    else { curve = hazardData.byPayoutBucket[sub] || hazardData.byPayoutBucket[hazardData.buckets[0]]; label = sub||hazardData.buckets[0]; }
+    if(!curve || !curve.length) return;
+    const ctx = document.getElementById('hazardChart').getContext('2d');
+    if(hazardChartInstance) hazardChartInstance.destroy();
+    const isDark = document.documentElement.classList.contains('dark-theme');
+    const textColor = isDark ? '#7d92a8' : '#52606d';
+    const gridColor = isDark ? 'rgba(125,146,168,0.15)' : 'rgba(82,96,109,0.12)';
+    hazardChartInstance = new Chart(ctx, {
+      type:'line',
+      data:{ labels: curve.map(p=>p.t), datasets:[{ label:`Überlebenswahrscheinlichkeit: ${label}`, data: curve.map(p=>p.survival*100), borderColor:'#0e7490', borderWidth:2, pointRadius:2, fill:true, backgroundColor:'rgba(14,116,144,0.1)', tension:0.15 }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{labels:{color:textColor}}, tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'% (n='+curve[ctx.dataIndex].atRisk+')'}} },
+        scales:{ x:{ title:{display:true,text:'Jahre in der Serie',color:textColor}, ticks:{color:textColor}, grid:{color:gridColor} },
+                 y:{ min:0, max:100, ticks:{color:textColor, callback:v=>v+'%'}, grid:{color:gridColor} } },
+      },
+    });
+    const y5 = curve.find(p=>p.t===5), y10 = curve.find(p=>p.t===10);
+    document.getElementById('hazardInsight').innerHTML =
+      `Nach 5 Jahren laufen noch <b>${y5?(y5.survival*100).toFixed(1):'n.v.'}%</b> der Serien, nach 10 Jahren <b>${y10?(y10.survival*100).toFixed(1):'n.v.'}%</b>. `+
+      `Das erklärt, warum echte Dividend Aristocrats (25+ Jahre ohne Unterbrechung) so selten sind — die meisten Serien brechen in den ersten Jahren ab, nur eine kleine Elite hält jahrzehntelang durch.`;
+  };
+
+  // ---- TAB 3: PORTFOLIO ----
+  window.addToBasket = function(){
+    if(!portfolioPending) return;
+    if(basket.find(b=>b.symbol===portfolioPending.symbol)) return;
+    basket.push(portfolioPending);
+    renderBasket();
+  };
+  window.removeFromBasket = function(sym){
+    basket = basket.filter(b=>b.symbol!==sym);
+    renderBasket();
+  };
+  function renderBasket(){
+    document.getElementById('basketList').innerHTML = basket.map(b=>`<div class="basket-chip">${b.name} (${b.symbol}) <button class="rm-btn" onclick="removeFromBasket('${b.symbol}')">✕</button></div>`).join('');
+    document.getElementById('portfolioSimPanel').style.display = basket.length ? 'block' : 'none';
+    document.getElementById('portfolioResultsArea').style.display = 'none';
+  }
+
+  window.runPortfolioMonteCarlo = function(){
+    if(!basket.length) return;
+    const horizon = parseInt(document.getElementById('pfHorizonSelect').value);
+    const nTrials = parseInt(document.getElementById('pfTrialsSelect').value);
+    const n = basket.length;
+    const survivalCounts = new Array(n+1).fill(0);
+    const perSymbolStillPaying = basket.map(()=>0);
+    for(let trial=0; trial<nTrials; trial++){
+      let survivors = 0;
+      basket.forEach((sym, idx)=>{
+        const scope = matrixFor(sym.sector);
+        const matrix = data.matrices[scope];
+        let state = sym.currentState;
+        for(let y=0;y<horizon;y++) state = weightedNext(matrix, state);
+        if(state!=='Suspended'){ survivors++; perSymbolStillPaying[idx]++; }
+      });
+      survivalCounts[survivors]++;
+    }
+    lastPfResult = { survivalCounts, nTrials, n, horizon, perSymbolStillPaying,
+      avgSurvivors: survivalCounts.reduce((s,c,i)=>s+c*i,0)/nTrials,
+      pAllSurvive: survivalCounts[n]/nTrials*100 };
+    renderPortfolioResults(lastPfResult);
+  };
+
+  function renderPortfolioResults(sim){
+    if(!sim) return;
+    document.getElementById('portfolioResultsArea').style.display = 'block';
+    document.getElementById('pfResultGrid').innerHTML = `
+      <div class="result-card"><div class="result-title">Ø noch zahlende Positionen</div><div class="result-val">${sim.avgSurvivors.toFixed(2)} / ${sim.n}</div><div class="result-sub">nach ${sim.horizon} Jahren</div></div>
+      <div class="result-card"><div class="result-title">Alle Positionen überleben</div><div class="result-val" style="color:var(--green)">${sim.pAllSurvive.toFixed(1)}%</div><div class="result-sub">0 Ausfälle im Korb</div></div>
+      <div class="result-card"><div class="result-title">Mind. die Hälfte überlebt</div><div class="result-val" style="color:var(--gold)">${(sim.survivalCounts.slice(Math.ceil(sim.n/2)).reduce((a,b)=>a+b,0)/sim.nTrials*100).toFixed(1)}%</div><div class="result-sub">≥ ${Math.ceil(sim.n/2)} von ${sim.n}</div></div>
+    `;
+    const ctx = document.getElementById('pfDistChart').getContext('2d');
+    if(pfDistChartInstance) pfDistChartInstance.destroy();
+    const isDark = document.documentElement.classList.contains('dark-theme');
+    const textColor = isDark ? '#7d92a8' : '#52606d';
+    const gridColor = isDark ? 'rgba(125,146,168,0.15)' : 'rgba(82,96,109,0.12)';
+    pfDistChartInstance = new Chart(ctx, {
+      type:'bar',
+      data:{ labels: sim.survivalCounts.map((_,i)=>i+' von '+sim.n), datasets:[{ label:'Wahrscheinlichkeit', data: sim.survivalCounts.map(c=>c/sim.nTrials*100), backgroundColor:'#0e7490' }] },
       options:{ responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.parsed.y.toFixed(1)+'%'}} },
         scales:{ x:{ ticks:{color:textColor}, grid:{color:gridColor} }, y:{ ticks:{color:textColor, callback:v=>v+'%'}, grid:{color:gridColor} } },
